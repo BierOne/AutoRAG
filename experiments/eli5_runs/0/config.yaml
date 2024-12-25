@@ -1,0 +1,54 @@
+node_lines:
+- node_line_name: retrieve_node_line
+  nodes:
+  - modules:
+    - module_type: hybrid_cc
+      target_module_params:
+      - top_k: 3
+        vectordb: chroma_mpnet
+      - top_k: 3
+      target_modules:
+      - VectorDB
+      - BM25
+      top_k: 3
+      weight: 0.0
+      weights:
+      - 0.3
+      - 0.7
+    node_type: retrieval
+    strategy:
+      metrics:
+      - retrieval_f1
+      - retrieval_recall
+      - retrieval_precision
+- node_line_name: post_retrieve_node_line
+  nodes:
+  - modules:
+    - module_type: Fstring
+      prompt: "Read the passages and answer the given question. \n Question: {query}\
+        \ \n Passage: {retrieved_contents} \n Answer : "
+    node_type: prompt_maker
+    strategy:
+      metrics:
+      - meteor
+      - rouge
+      - bert_score
+  - modules:
+    - batch: 1
+      llm: ollama
+      model: llama3
+      module_type: LlamaIndexLLM
+      temperature: 0.5
+    node_type: generator
+    strategy:
+      metrics:
+      - meteor
+      - rouge
+      - bert_score
+vectordb:
+- client_type: persistent
+  collection_name: huggingface_all_mpnet_base_v2
+  db_type: chroma
+  embedding_model: huggingface_all_mpnet_base_v2
+  name: chroma_mpnet
+  path: /home/lyb/RAG/experiments/chroma_mpnet

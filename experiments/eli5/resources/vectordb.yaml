@@ -1,0 +1,7 @@
+vectordb:
+- client_type: persistent
+  collection_name: huggingface_all_mpnet_base_v2
+  db_type: chroma
+  embedding_model: huggingface_all_mpnet_base_v2
+  name: chroma_mpnet
+  path: /home/lyb/RAG/experiments/chroma_mpnet

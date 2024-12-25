@@ -1,0 +1,7 @@
+filename,module_name,module_params,execution_time,retrieval_f1,retrieval_recall,retrieval_precision,is_best
+0.parquet,VectorDB,"{'top_k': 3, 'vectordb': 'chroma_mpnet'}",0.06350278854370117,0.4,0.8,0.2666666666666666,False
+1.parquet,BM25,{'top_k': 3},0.04141602516174316,0.5,1.0,0.33333333333333326,True
+2.parquet,HybridRRF,"{'top_k': 3, 'target_modules': ('VectorDB', 'BM25'), 'rrf_k': 10, 'weight': 4.0, 'target_module_params': ({'top_k': 3, 'vectordb': 'chroma_mpnet'}, {'top_k': 3})}",0.10491881370544434,0.475,0.95,0.3166666666666666,False
+3.parquet,HybridRRF,"{'top_k': 3, 'target_modules': ('VectorDB', 'BM25'), 'rrf_k': 3, 'weight': 4.0, 'target_module_params': ({'top_k': 3, 'vectordb': 'chroma_mpnet'}, {'top_k': 3})}",0.10491881370544434,0.475,0.95,0.3166666666666666,False
+4.parquet,HybridRRF,"{'top_k': 3, 'target_modules': ('VectorDB', 'BM25'), 'rrf_k': 5, 'weight': 4.0, 'target_module_params': ({'top_k': 3, 'vectordb': 'chroma_mpnet'}, {'top_k': 3})}",0.10491881370544434,0.475,0.95,0.3166666666666666,False
+5.parquet,HybridCC,"{'top_k': 3, 'target_modules': ('VectorDB', 'BM25'), 'weights': (0.5, 0.5), 'weight': 0.0, 'target_module_params': ({'top_k': 3, 'vectordb': 'chroma_mpnet'}, {'top_k': 3})}",0.10491881370544434,0.5,1.0,0.33333333333333326,False

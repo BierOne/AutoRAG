@@ -1,0 +1,3 @@
+node_type,best_module_filename,best_module_name,best_module_params,best_execution_time
+prompt_maker,0.parquet,Fstring,{'prompt': 'Read the passages and answer the given question. \n Question: {query} \n Passage: {retrieved_contents} \n Answer : '},0.0003593444824218
+generator,0.parquet,LlamaIndexLLM,"{'llm': 'ollama', 'model': 'llama3', 'temperature': 0.5, 'batch': 1}",2.6776728987693788

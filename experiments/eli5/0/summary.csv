@@ -1,0 +1,4 @@
+node_line_name,node_type,best_module_filename,best_module_name,best_module_params,best_execution_time
+retrieve_node_line,retrieval,7.parquet,HybridCC,"{'top_k': 3, 'target_modules': ('VectorDB', 'BM25'), 'weights': (0.3, 0.7), 'weight': 0.0, 'target_module_params': ({'top_k': 3, 'vectordb': 'chroma_mpnet'}, {'top_k': 3})}",0.09694052934646606
+post_retrieve_node_line,prompt_maker,0.parquet,Fstring,{'prompt': 'Read the passages and answer the given question. \n Question: {query} \n Passage: {retrieved_contents} \n Answer : '},0.0003593444824218
+post_retrieve_node_line,generator,0.parquet,LlamaIndexLLM,"{'llm': 'ollama', 'model': 'llama3', 'temperature': 0.5, 'batch': 1}",2.6776728987693788

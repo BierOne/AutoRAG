@@ -1,0 +1,2 @@
+filename,module_name,module_params,execution_time,average_output_token,meteor,rouge,bert_score,is_best
+0.parquet,LlamaIndexLLM,"{'llm': 'ollama', 'model': 'llama3', 'temperature': 0.5, 'batch': 1}",2.6776728987693788,121.3,0.1664389154066857,0.12301323300061431,0.8315104693174362,True
