@@ -47,6 +47,8 @@ class HybridRetrieval(BaseRetrieval, metaclass=abc.ABCMeta):
 	def __init__(
 		self, project_dir: str, target_modules, target_module_params, *args, **kwargs
 	):
+		print("HybridRetrieval Init!!!!")
+		print(f"target_modules: {target_modules}", target_module_params)
 		super().__init__(project_dir)
 		self.target_modules = list(
 			map(

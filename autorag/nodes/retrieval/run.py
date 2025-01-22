@@ -226,6 +226,11 @@ def run_retrieval_node(
 
 	logger.info("Running retrieval node - hybrid retrieval module...")
 	# Next, run hybrid retrieval
+
+	print("retrieval modules:", [module.__name__ for module in modules])
+	for m_param in module_params:
+		print("retrieval modules params:", m_param, '\n')
+
 	if any([module.__name__ in hybrid_module_names for module in modules]):
 		hybrid_modules, hybrid_module_params = zip(
 			*filter(
@@ -233,6 +238,9 @@ def run_retrieval_node(
 				zip(modules, module_params),
 			)
 		)
+		for m_param in hybrid_module_params:
+			print("retrieval modules params:", m_param, '\n')
+
 		if all(
 			["target_module_params" in x for x in hybrid_module_params]
 		):  # for Runner.run

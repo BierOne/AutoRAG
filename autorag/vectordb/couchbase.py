@@ -29,11 +29,12 @@ class Couchbase(BaseVectorStore):
 		ingest_batch: int = 100,
 		text_key: Optional[str] = "text",
 		embedding_key: Optional[str] = "embedding",
+		similarity_metric: str = "ip",
 		scoped_index: bool = True,
 	):
 		super().__init__(
 			embedding_model=embedding_model,
-			similarity_metric="ip",
+			similarity_metric=similarity_metric,
 			embedding_batch=embedding_batch,
 		)
 

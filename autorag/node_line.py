@@ -40,7 +40,13 @@ def run_node_line(
 	:param task_eval: Progress task object
 	:return: The final result of the node line.
 	"""
+	print(f"Running node line in {node_line_dir}...")
+	print(f"Node types: {[node.node_type for node in nodes]}")
+	print(f"progress: {progress}")
+	print(f"task_eval: {task_eval}")
+
 	if previous_result is None:
+		# first node line, we need to load the qa data as the input
 		project_dir = pathlib.PurePath(node_line_dir).parent.parent
 		qa_path = os.path.join(project_dir, "data", "qa.parquet")
 		if not os.path.exists(qa_path):
@@ -49,6 +55,7 @@ def run_node_line(
 
 	summary_lst = []
 	for node in nodes:
+		# print(f"Running node {node.node_type}...")
 		previous_result = node.run(previous_result, node_line_dir)
 		node_summary_df = load_summary_file(
 			os.path.join(node_line_dir, node.node_type, "summary.csv")

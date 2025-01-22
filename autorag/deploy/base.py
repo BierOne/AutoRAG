@@ -223,6 +223,7 @@ class Runner(BaseRunner):
 		for module_instance, module_param in zip(
 			self.module_instances, self.module_params
 		):
+			print(module_instance, module_param)
 			new_result = module_instance.pure(
 				previous_result=previous_result, **module_param
 			)

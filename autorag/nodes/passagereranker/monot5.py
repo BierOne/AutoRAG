@@ -73,9 +73,11 @@ class MonoT5(BasePassageReranker):
 			model_name, **model_params
 		).eval()
 
+
 		# Determine the device to run the model on (GPU if available, otherwise CPU)
 		self.device = "cuda" if torch.cuda.is_available() else "cpu"
 		self.model.to(self.device)
+		print(self.device)
 
 		token_false, token_true = prediction_tokens[model_name]
 		self.token_false_id = self.tokenizer.convert_tokens_to_ids(token_false)
