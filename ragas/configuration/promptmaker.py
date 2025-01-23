@@ -1,10 +1,10 @@
-from ragas.configuration.base import *
+from .base import *
 # import ragas
 import ConfigSpace
 from ConfigSpace import ConfigurationSpace, ForbiddenEqualsClause, ForbiddenAndConjunction, ForbiddenInClause, NotEqualsCondition
 from ConfigSpace.hyperparameters import CategoricalHyperparameter, UniformIntegerHyperparameter, UniformFloatHyperparameter, Constant
+from .method_zoo import prompt_maker_method
 
-method_zoo = ['fstring', 'window_replacement', 'long_context_reorder']
 
 
 class PromptMakerConfiguration(BaseConfiguration):
@@ -20,7 +20,7 @@ class PromptMakerConfiguration(BaseConfiguration):
             prompt_set = []
             try:
                 for iter in prompt_maker["method"]:
-                    if iter in method_zoo:
+                    if iter in prompt_maker_method:
                         method.append(iter)
                 for k,v in prompt_maker["prompt"].items():
                     prompt_set.append(v)

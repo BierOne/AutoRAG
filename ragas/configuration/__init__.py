@@ -1,5 +1,5 @@
 # from ragas.base import BaseConfiguration
-from ragas.configuration import *
+from .base import *
 
 
 # Sampling and extra parsing
