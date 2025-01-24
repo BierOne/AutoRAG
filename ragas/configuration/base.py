@@ -3,7 +3,10 @@ from typing import List, Tuple, Union
 from .util import load_yaml_config
 import os
 from typing import Optional, Dict
-from ConfigSpace import ConfigurationSpace, Configuration
+from ConfigSpace import ConfigurationSpace, ForbiddenEqualsClause, ForbiddenAndConjunction, ForbiddenInClause, \
+    NotEqualsCondition, Configuration, InCondition
+from ConfigSpace.hyperparameters import CategoricalHyperparameter, UniformIntegerHyperparameter, \
+    UniformFloatHyperparameter, Constant
 
 
 class BaseConfiguration:

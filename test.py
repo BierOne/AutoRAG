@@ -123,3 +123,4 @@ cs.add_configuration_space(
 cs.to_yaml("generator_config.yaml")
 cs = ConfigurationSpace.from_yaml("generator_config.yaml")
 print(cs)
+print(cs.sample_configuration(5))             
