@@ -3,7 +3,7 @@ from .base import *
 import ConfigSpace
 from ConfigSpace import ConfigurationSpace, ForbiddenEqualsClause, ForbiddenAndConjunction, ForbiddenInClause, NotEqualsCondition
 from ConfigSpace.hyperparameters import CategoricalHyperparameter, UniformIntegerHyperparameter, UniformFloatHyperparameter, Constant
-from .method_zoo import prompt_maker_method
+from .zoo import prompt_maker_method
 
 
 
@@ -14,7 +14,7 @@ class PromptMakerConfiguration(BaseConfiguration):
         self.cs = self.build(config)
 
     def build(self, config) -> ConfigurationSpace|None:
-        prompt_maker = config["prompt_maker"]
+        prompt_maker = config.get("prompt_maker")
         if prompt_maker is not None:
             method = []
             prompt_set = []
