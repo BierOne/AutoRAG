@@ -26,7 +26,7 @@ class BaseConfiguration:
         pass
 
     @abstractmethod
-    def build(self) -> None:
+    def build(self, config: Dict) -> None:
         """
         Build the configuration with hyperparameters space.
         """
