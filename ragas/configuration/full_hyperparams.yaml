@@ -1,0 +1,32 @@
+vectordb:
+  method: [chroma, couchbase, milvus, pinecone, qdrant, weaviate]
+  collection_name: [huggingface_all_mpnet_base_v2]
+  embedding_model: [huggingface_all_mpnet_base_v2]
+  embedding_batch: [100, 200]
+  similarity_metric: [cosine, euclidean, ip]
+  ingest_batch: [100, 200]
+  milvus:
+    index_type: [IVF_FLAT, ScaNN, IVF_SQ8, SCANN, GPU_CAGRA, GPU_IVF_FLAT] # https://milvus.io/docs/index.md?tab=floating
+
+retriever:
+
+
+generator:
+
+
+reranker:
+
+
+prompt_maker:
+  generator_modules:
+    - module_type: general.llms
+      llm: general.dawdaw
+      model: general.openai
+  method:
+      - fstring
+      - window_replacement
+      - long_context_reorder
+  prompt:
+    set:
+      - "Tell me something about the question: {query} \n\n {retrieved_contents}"
+      - "Question: {query} \n Something to read: {retrieved_contents} \n What's your answer?"

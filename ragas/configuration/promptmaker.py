@@ -6,8 +6,19 @@ from ConfigSpace.hyperparameters import CategoricalHyperparameter, UniformIntege
 from .zoo import prompt_maker_method
 
 
+class PostRetrievalConfiguration(BaseConfiguration):
+    def __init__(self, config: Dict, project_dir: Optional[str] = None):
+        super().__init__(config, project_dir)
+        self.cs = self.build()
 
-class PromptMakerConfiguration(BaseConfiguration):
+    def post_build(self, cs: ConfigurationSpace):
+        """
+        Add general hyperparameters to the configuration space.
+        """
+        return cs
+
+
+class PromptMakerConfiguration(PostRetrievalConfiguration):
 
     def __init__(self, config: Dict, project_dir: Optional[str] = None):
         super().__init__(config, project_dir)
@@ -29,8 +40,6 @@ class PromptMakerConfiguration(BaseConfiguration):
 				f"Prompt Maker elements are missing."
 			)
 
-
-                
             cs = ConfigurationSpace(
                 space={
                     "prompt_maker_methods": CategoricalHyperparameter("methods", choices=method),
