@@ -1,62 +1,35 @@
-prompt_maker:
-  method:
-      - fstring
-      - window_replacement
-      - long_context_reorder
-  prompt:
-    set:
-      - "Tell me something about the question: {query} \n\n {retrieved_contents}"
-      - "Question: {query} \n Something to read: {retrieved_contents} \n What's your answer?"
-generator:
-    llm_1: 
-      name: openai # object name
-      framework: llama_index_llm # module_type
-      llm: openai # interface type in llama_index_llm
-      model: gpt-3.5-turbo-16k # model name
-      temperature: [0.0, 2.0] # It is a range 
-      max_token: 512
-      batch: 16
-    llm_2:
-      name: mistralai_7b
-      framework: llama_index_llm
-      llm: huggingface
-      model: mistralai/Mistral-7B-Instruct-v0.2
-      temperature: [0.0, 2.0]
-      max_tokens: 512
-      device_map: "auto"
-      model_kwargs:
-        torch_dtype: "float16"
-    llm_3:
-      name: mistralai_7b
-      framework: llama_index_llm
-      llm: openailike
-      model: mistralai/Mistral-7B-Instruct-v0.2
-      temperature: [0.0, 2.0]
-      max_tokens: 512
-      batch: 16
-      api_base: your_api_base
-      api_key: your_api_key
-    llm_4:
-      name: mistralai_7b
-      framework: vllm # vllm with llama_index_llm (not recommand)
-      llm: mistralai/Mistral-7B-Instruct-v0.2 # equal to model parameter in llama_index_ll
-      temperature: [0.0, 2.0]
-      max_tokens: 512
-      top_p: [0, 1] # It is a range
-    llm_5:
-      name: gpt4
-      framework: openai_llm
-      llm: gpt-4-turbo-2024-04-09  # equal to model parameter in llama_index_ll
-      temperature: [0.0, 2.0]
-      max_tokens: 512
-      batch: 16
-      api_key: your_api_key
-      truncate: 4000
-    llm_6:
-      name: Qwen
-      framework: vllm_api
-      uri: http://localhost:8012
-      llm: Qwen/Qwen2.5-14B-Instruct-AWQ
-      temperature: [0.0, 2.0]
-      max_tokens: 400
+vectordb:
+  method: [chroma, couchbase, milvus, pinecone, qdrant, weaviate]
+  collection_name: [huggingface_all_mpnet_base_v2]
+  embedding_model: [huggingface_all_mpnet_base_v2]
+  embedding_batch: [100, 200]
+  similarity_metric: [cosine, euclidean, ip]
+  ingest_batch: [100, 200]
+  milvus:
+    index_type: [IVF_FLAT, ScaNN, IVF_SQ8, SCANN, GPU_CAGRA, GPU_IVF_FLAT] # https://milvus.io/docs/index.md?tab=floating
 
+
+prompt_maker:
+  method: [fstring, window_replacement, long_context_reorder]
+  prompt:
+    set: ["Tell me something about the question: {query} \n\n {retrieved_contents}",
+          "Question: {query} \n Something to read: {retrieved_contents} \n What's your answer?"]
+
+
+generator: # api_base, api_key
+  method: [LlamaIndexLLM, OpenAILLM, Vllm, VllmAPI]
+  temperature: [0.5, 1.0, 1.5] # The temperature of the sampling. Higher temperature means more randomness.
+  batch: [16, 32]
+  max_token: 512
+  LlamaIndexLLM:
+    llm: [openai, openailike, mock, bedrock, huggingfacellm, ollama]
+    # model should be with condition (gpt-3.5-turbo* should use llm:openai, mistralai* should use openailike)
+    model: [gpt-3.5-turbo-16k, gpt-3.5-turbo-1106, llama3, mistralai/Mistral-7B-Instruct-v0.2]
+    torch_dtype: "float16"
+  OpenAILLM: # static params: truncate, api_key
+    llm: [gpt-3.5-turbo, gpt-4-turbo-2024-04-09] # A model name for openai.
+  Vllm:
+    llm: [mistralai/Mistral-7B-Instruct-v0.2, facebook/opt-125m]
+    top_p: (0, 1.0) # Float that controls the cumulative probability of the top tokens to consider. Must be in (0, 1]. Set to 1 to consider all tokens.
+  VllmAPI: # static params: uri
+    llm: [Qwen/Qwen2.5-14B-Instruct-AWQ]
