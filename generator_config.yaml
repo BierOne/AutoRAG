@@ -71,27 +71,31 @@ conditions:
   parent: name
   type: EQ
   value: gpt4
-- child: mistralai_7b_device_map
+- child: mistralai_7b_huggingface_device_map
   parent: name
   type: EQ
   value: mistralai_7b
-- child: mistralai_7b_framework
+- child: mistralai_7b_huggingface_framework
   parent: name
   type: EQ
   value: mistralai_7b
-- child: mistralai_7b_llm
+- child: mistralai_7b_huggingface_llm
   parent: name
   type: EQ
   value: mistralai_7b
-- child: mistralai_7b_max_tokens
+- child: mistralai_7b_huggingface_max_tokens
   parent: name
   type: EQ
   value: mistralai_7b
-- child: mistralai_7b_model
+- child: mistralai_7b_huggingface_model
   parent: name
   type: EQ
   value: mistralai_7b
-- child: mistralai_7b_model_kwargs
+- child: mistralai_7b_huggingface_model_kwargs
+  parent: name
+  type: EQ
+  value: mistralai_7b
+- child: mistralai_7b_huggingface_temperature
   parent: name
   type: EQ
   value: mistralai_7b
@@ -124,10 +128,6 @@ conditions:
   type: EQ
   value: mistralai_7b
 - child: mistralai_7b_openailike_temperature
-  parent: name
-  type: EQ
-  value: mistralai_7b
-- child: mistralai_7b_temperature
   parent: name
   type: EQ
   value: mistralai_7b
@@ -302,35 +302,35 @@ hyperparameters:
   - auto
   default_value: auto
   meta: null
-  name: mistralai_7b_device_map
+  name: mistralai_7b_huggingface_device_map
   type: categorical
   weights: null
 - choices:
   - llama_index_llm
   default_value: llama_index_llm
   meta: null
-  name: mistralai_7b_framework
+  name: mistralai_7b_huggingface_framework
   type: categorical
   weights: null
 - choices:
   - huggingface
   default_value: huggingface
   meta: null
-  name: mistralai_7b_llm
+  name: mistralai_7b_huggingface_llm
   type: categorical
   weights: null
 - choices:
   - 512
   default_value: 512
   meta: null
-  name: mistralai_7b_max_tokens
+  name: mistralai_7b_huggingface_max_tokens
   type: categorical
   weights: null
 - choices:
   - mistralai/Mistral-7B-Instruct-v0.2
   default_value: mistralai/Mistral-7B-Instruct-v0.2
   meta: null
-  name: mistralai_7b_model
+  name: mistralai_7b_huggingface_model
   type: categorical
   weights: null
 - choices:
@@ -338,9 +338,16 @@ hyperparameters:
     torch_dtype: float16
   default_value: *id001
   meta: null
-  name: mistralai_7b_model_kwargs
+  name: mistralai_7b_huggingface_model_kwargs
   type: categorical
   weights: null
+- default_value: 1.0
+  log: false
+  lower: 0.0
+  meta: null
+  name: mistralai_7b_huggingface_temperature
+  type: uniform_float
+  upper: 2.0
 - choices:
   - your_api_base
   default_value: your_api_base
@@ -395,13 +402,6 @@ hyperparameters:
   lower: 0.0
   meta: null
   name: mistralai_7b_openailike_temperature
-  type: uniform_float
-  upper: 2.0
-- default_value: 1.0
-  log: false
-  lower: 0.0
-  meta: null
-  name: mistralai_7b_temperature
   type: uniform_float
   upper: 2.0
 - choices:
