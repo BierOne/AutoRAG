@@ -1,14 +1,11 @@
 # from ragas.base import BaseConfiguration
 from .base import *
+from .retrieval import RetrievalConfiguration
+from .vectordb import VectorDBConfiguration
+from .generator import GeneratorConfiguration
+from .promptmaker import PromptMakerConfiguration
 
 
-# Sampling and extra parsing
-def parse_sample(sample):
-    """Parses a sampled configuration, handling prefixes for each method."""
-    parsed = {}
-    for key, value in sample.items():
-        if key.startswith("chroma_"):
-            parsed[key[len("chroma_"):]] = value  # Strip the prefix for ModelB parameters
-        else:
-            parsed[key] = value
-    return parsed
+
+
+

@@ -300,7 +300,7 @@ async def process_batch(tasks, batch_size: int = 64) -> List[Any]:
 	:return: A list of results from the processed tasks.
 	"""
 	results = []
-
+	print(f"Processing {len(tasks)} tasks in batches of {batch_size}...")
 	for i in range(0, len(tasks), batch_size):
 		batch = tasks[i : i + batch_size]
 		batch_results = await asyncio.gather(*batch)
@@ -685,6 +685,7 @@ def empty_cuda_cache():
 			torch.cuda.empty_cache()
 	except ImportError:
 		pass
+
 
 
 def load_yaml_config(yaml_path: str) -> Dict:

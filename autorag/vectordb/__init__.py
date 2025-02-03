@@ -4,7 +4,7 @@ from typing import List
 from autorag.support import dynamically_find_function
 from autorag.utils.util import load_yaml_config
 from autorag.vectordb.base import BaseVectorStore
-from data.parse.run import default_map
+from autorag.data.parse.run import default_map
 
 
 
@@ -27,6 +27,7 @@ def get_support_vectordb(vectordb_name: str):
 
 
 def load_vectordb(vectordb_name: str, **kwargs):
+    print(vectordb_name)
     vectordb = get_support_vectordb(vectordb_name)
     return vectordb(**kwargs)
 
@@ -44,6 +45,7 @@ def load_vectordb_from_yaml(yaml_path: str, vectordb_name: str, project_dir: str
             path=chroma_path,
         )
 
+    print(vectordb_name, vectordb_list)
     target_dict = list(filter(lambda x: x["name"] == vectordb_name, vectordb_list))
     target_dict[0].pop("name")  # delete a name key
     target_vectordb_name = target_dict[0].pop("db_type")

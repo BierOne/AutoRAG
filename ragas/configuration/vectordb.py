@@ -1,4 +1,5 @@
 from .base import *
+from .zoo import supported_vectordbs
 from pathlib import Path
 from typing import IO, TYPE_CHECKING, Any, Literal, Mapping, Sequence, overload
 
@@ -18,8 +19,9 @@ VECTORDB_STATIC_PARAMS = {
         "ssl": False,
         "headers": None,
         "api_key": None,
-        "tanant": DEFAULT_TENANT,
+        "tenant": DEFAULT_TENANT,
         "database": DEFAULT_DATABASE,
+        "path": "/home/lyb/RAG/experiments/default_vectordb",
     },
     "couchbase": {
         "index_name": "my_vector_index",  # replace your index name
@@ -72,86 +74,102 @@ VECTORDB_STATIC_PARAMS = {
     }
 }
 
-def get_db_static_params(method: str) -> Dict:
-    """
-    Get the default parameters for the database.
-    These would not be used for hyperparameter optimization.
-    """
-    pass
 
 class VectorDBConfiguration(BaseConfiguration):
 
     def __init__(self, config: Dict, project_dir: Optional[str] = None):
         super().__init__(config, project_dir)
-        self.cs = self.build()
+        self.cs = self.build(config)
 
-    @classmethod
-    def from_yaml(cls,
-                  path: str | Path | IO[str],
-                  project_dir: Optional[str] = None,
-                  **kwargs: Any,) -> ConfigurationSpace:
-        """Decode a serialized configuration space from a yaml file.
-        Args:
-            path: Path to the serialized configuration space
-            project_dir: The project directory to use as the base directory for relative paths
-            **kwargs: Any additional arguments to pass to `yaml.safe_load`
-        Returns:
-            The decoded configuration
-        """
-        import yaml
 
-        if isinstance(path, (str, Path)):
-            p = Path(path)
-            with p.open("r") as f:
-                d = yaml.safe_load(f, **kwargs)
-        else:
-            d = yaml.safe_load(path, **kwargs)
-        cs = cls.from_serialized_dict(d, decoders=decoders)
-        return cls(cs, project_dir=project_dir)
+    def build(self, config: Dict) -> Configuration:
+        assert "method" in config, "method is required in the configuration."
+        used_methods = config.pop("method", [])
+        method_weights = config.pop("method_weights", [1]*len(used_methods))
 
-    def build(self, config: Dict) -> None:
         cs = ConfigurationSpace(
+            name="vectordb",
             space={
-                "vectordb_name": CategoricalHyperparameter("vectordb_name", ["chroma", "couchbase", "milvus",
-                                                                             "pinecone", "qdrant", "weaviate"],
-                                                           weights=[1, 1, 1, 1, 1, 1]),
+                "db_type": CategoricalHyperparameter("db_type", used_methods,
+                                                           weights=method_weights),
             }
         )
 
+        # Add method specific hyperparameters
+        for method in supported_vectordbs:
+            method_params = config.pop(method, {})
+            # add hyperparameter configuration space
+            if method in used_methods:
+                cs.add_configuration_space(
+                    prefix="[{}]".format(method),
+                    delimiter="",
+                    configuration_space=ConfigurationSpace(method_params),
+                    parent_hyperparameter={"parent": cs["db_type"], "value": method},
+                )
+
         # Add general hyperparameters
-        embedding_model = CategoricalHyperparameter("embedding_model", choices=["openai", "bert", "gpt-3"])
-        embedding_batch = UniformIntegerHyperparameter("embedding_batch", lower=50, upper=200, default_value=100)
-        similarity_metric = CategoricalHyperparameter("similarity_metric", choices=["cosine", "euclidean", "ip"],
-                                                      default_value="cosine")
-        collection_name = CategoricalHyperparameter("collection_name",
-                                                    choices=["collection1", "collection2", "collection"])
-        ingest_batch = UniformIntegerHyperparameter("ingest_batch", lower=50, upper=200, default_value=100)
-        cs.add([embedding_model, embedding_batch, similarity_metric, collection_name, ingest_batch])
+        if len(config) > 0:
+            params = list(parse_hyperparameters_from_dict(config))
+            cs.add(params)
+
+        # # Add general hyperparameters
+        # embedding_model = CategoricalHyperparameter("embedding_model", choices=["openai", "bert", "gpt-3"])
+        # embedding_batch = UniformIntegerHyperparameter("embedding_batch", lower=50, upper=200, default_value=100)
+        # similarity_metric = CategoricalHyperparameter("similarity_metric", choices=["cosine", "euclidean", "ip"],
+        #                                               default_value="cosine")
+        # collection_name = CategoricalHyperparameter("collection_name",
+        #                                             choices=["collection1", "collection2", "collection"])
+        # ingest_batch = UniformIntegerHyperparameter("ingest_batch", lower=50, upper=200, default_value=100)
+        # cs.add([embedding_model, embedding_batch, similarity_metric, collection_name, ingest_batch])
 
         # add conditions
-        cs.add([
+        conditions = []
+        if "pinecone" in cs["db_type"].choices:
             # USE cs["collection_name"] only if vectordb_name != "pinecone"
-            NotEqualsCondition(cs["collection_name"], cs["vectordb_name"], "pinecone"),
+            conditions.append(NotEqualsCondition(cs["collection_name"], cs["db_type"], "pinecone"))
+        if "couchbase" in cs["db_type"].choices:
             # cs["similarity_metric"] == "ip" if vectordb_name == "couchbase"
-            ForbiddenAndConjunction(
-                ForbiddenEqualsClause(cs["vectordb_name"], "couchbase"),
+            conditions.append(ForbiddenAndConjunction(
+                ForbiddenEqualsClause(cs["db_type"], "couchbase"),
                 ForbiddenInClause(cs['similarity_metric'], ["cosine", "euclidean"])
-            ),
-            # USE cs["ingest_batch"]  if vectordb_name in ["couchbase", "milvus", "pinecone"]
-            InCondition(cs["ingest_batch"], cs["vectordb_name"], ["couchbase", "milvus", "pinecone"]),
-        ])
+            ))
+        # USE cs["ingest_batch"]  if vectordb_name in ["couchbase", "milvus", "pinecone"]
+        # if any(db in cs["db_type"].choices for db in ["couchbase", "milvus", "pinecone"]):
+        #     conditions.append(InCondition(cs["ingest_batch"], cs["db_type"], ["couchbase", "milvus", "pinecone"]))
+        cs.add(conditions)
 
-        # add hyperparameter configuration space for milvus
-        cs.add_configuration_space(
-            prefix="",
-            delimiter="",
-            configuration_space=ConfigurationSpace({
-                "index_type": CategoricalHyperparameter("index_type", choices=["IVF_FLAT", "IVF_SQ8"]),
-            }),
-            parent_hyperparameter={"parent": cs["vectordb_name"], "value": "milvus"},
-        )
         return cs
 
-    def sampling(self, size: Optional[int] = 1) -> Union[Configuration, List[Configuration]]:
-        return self.cs.sample_configuration(size)
+    @staticmethod
+    def load_static_params(module_type: str) -> Dict:
+        """
+        Get the default parameters for the module.
+        These would not be used for hyperparameter optimization.
+        """
+        return VECTORDB_STATIC_PARAMS.get(module_type, {})
+
+
+    def create_node_lines(self, size: Optional[int] = 1, samples: Optional[List[Mapping[str, Any]]] = None, **kwargs) -> Dict:
+        """
+        {
+            'name': 'chroma_mpnet',
+            'db_type': 'chroma',
+            'client_type': 'persistent',
+            'collection_name': 'huggingface_all_mpnet_base_v2',
+            'embedding_model': 'huggingface_all_mpnet_base_v2',
+        }
+        """
+        if samples is None:
+            samples = self.sampling(size, **kwargs)
+        node_lines = []
+        for hp_config in samples:
+            hp_config_dict = parse_hyperparameters_samples(dict(hp_config))
+            module_type = hp_config_dict["db_type"]
+            static_params = self.load_static_params(module_type)
+            hp_config_dict.update(static_params)
+            node_lines.append({
+                "name": "default_vectordb",
+                **hp_config_dict
+            })
+        return node_lines
 

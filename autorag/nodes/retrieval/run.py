@@ -239,7 +239,7 @@ def run_retrieval_node(
 			)
 		)
 		for m_param in hybrid_module_params:
-			print("retrieval modules params:", m_param, '\n')
+			print("hybrid retrieval modules params:", m_param, '\n')
 
 		if all(
 			["target_module_params" in x for x in hybrid_module_params]
@@ -405,6 +405,8 @@ def get_ids_and_scores(
 	previous_result,
 ) -> Dict[str, Tuple[List[List[str]], List[List[float]]]]:
 	project_dir = pathlib.PurePath(node_dir).parent.parent.parent
+
+	print(filenames)
 	best_results_df = list(
 		map(
 			lambda filename: pd.read_parquet(

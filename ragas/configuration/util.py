@@ -6,7 +6,7 @@ import yaml
 import re
 import ast
 
-def load_yaml_config(yaml_path: str) -> Dict:
+def load_yaml_config(yaml_path: str, **kwargs) -> Dict:
 	"""
 	Load a YAML configuration file for AutoRAG.
 	It contains safe loading, converting string to tuple, and insert environment variables.
@@ -18,7 +18,7 @@ def load_yaml_config(yaml_path: str) -> Dict:
 		raise ValueError(f"YAML file {yaml_path} does not exist.")
 	with open(yaml_path, "r", encoding="utf-8") as stream:
 		try:
-			yaml_dict = yaml.safe_load(stream)
+			yaml_dict = yaml.safe_load(stream, **kwargs)
 		except yaml.YAMLError as exc:
 			raise ValueError(f"YAML file {yaml_path} could not be loaded.") from exc
 
