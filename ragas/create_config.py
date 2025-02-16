@@ -24,6 +24,11 @@ def parse_args():
         action='store_true',
     )
 
+    parser.add_argument(
+        '--clean', '-c',
+        action='store_true',
+    )
+
     return parser.parse_args()
 
 
@@ -54,6 +59,11 @@ def main():
     args = parse_args()
     size = args.size
     config_dir = Path(args.config_dir)
+    if args.clean:
+        # remove config_dir
+        import shutil
+        shutil.rmtree(config_dir, ignore_errors=True)
+    os.makedirs(config_dir, exist_ok=True)
 
     config_path = "./configuration/config.yaml"
     retriever = RetrievalConfiguration.load_from_yaml(config_path, key="retrieval")

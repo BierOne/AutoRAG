@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, List, Tuple, Optional, Union
+from typing import Any, Dict, List, Tuple, Optional
 
 from pymilvus import (
 	DataType,
@@ -21,7 +21,7 @@ logger = logging.getLogger("AutoRAG")
 class Milvus(BaseVectorStore):
 	def __init__(
 		self,
-		embedding_model: Union[str, List[dict]],
+		embedding_model: str,
 		collection_name: str,
 		embedding_batch: int = 100,
 		similarity_metric: str = "cosine",

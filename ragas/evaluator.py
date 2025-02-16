@@ -17,7 +17,11 @@ import glob
 from autorag.nodes.retrieval.base import get_bm25_pkl_name
 from autorag.nodes.retrieval.bm25 import bm25_ingest
 from autorag.schema import Node
-
+from autorag.nodes.retrieval.vectordb import (
+	vectordb_ingest,
+	filter_exist_ids,
+	filter_exist_ids_from_retrieval_gt,
+)
 from autorag.utils import (
     cast_qa_dataset,
     cast_corpus_dataset,
@@ -25,7 +29,8 @@ from autorag.utils import (
 )
 from autorag.utils.util import (
     load_yaml_config,
-    load_summary_file
+    load_summary_file,
+    get_event_loop
 )
 from autorag.vectordb import load_all_vectordb_from_yaml
 from autorag.evaluator import Evaluator
@@ -33,29 +38,9 @@ from autorag.evaluator import Evaluator
 from runner import AdvancedRunner as Runner
 
 # for run_generator_node
-from autorag.schema.metricinput import MetricInput
-from autorag.utils.util import to_list
-from autorag.strategy import measure_speed, filter_by_threshold, select_best
-from autorag.evaluation import evaluate_generation
 from autorag.evaluation.util import cast_metrics
+from autorag.strategy import measure_speed, filter_by_threshold, select_best
 logger = logging.getLogger("AutoRAG")
-
-
-def evaluate_generator_node(
-    result_df: pd.DataFrame,
-    metric_inputs: List[MetricInput],
-    metrics: Union[List[str], List[Dict]],
-):
-    @evaluate_generation(metric_inputs=metric_inputs, metrics=metrics)
-    def evaluate_generation_module(df: pd.DataFrame):
-        return (
-            df["generated_texts"].tolist(),
-            df["generated_tokens"].tolist(),
-            df["generated_log_probs"].tolist(),
-        )
-
-    return evaluate_generation_module(result_df)
-
 
 
 
@@ -122,33 +107,30 @@ class TestEvaluator(Evaluator):
             trial_name = get_new_trial_name()
         make_trial_dir(trial_name)
         self.trial_path = os.path.join(self.project_dir, trial_name)
+        os.makedirs(os.path.join(self.trial_path, "output"), exist_ok=True)
 
-        # create config resources
-        # trial_path/done_configs: saving configs that have been evaluated
-        # trial_path/undone_configs: saving configs that have not been evaluated
-        self.done_path = os.path.join(self.trial_path, "done_configs")
-        self.undone_path = os.path.join(self.trial_path, "undone_configs")
 
-        if os.path.exists(self.done_path) and os.path.exists(self.undone_path):
-            print("Trial directory already exists:", self.trial_path)
-            print("Number of done configs:", len(glob.glob(os.path.join(self.done_path, "*.yaml"))))
-            print("Number of undone configs:", len(glob.glob(os.path.join(self.undone_path, "*.yaml"))))
-        else:
-            os.makedirs(self.done_path, exist_ok=False)
-            os.makedirs(self.undone_path, exist_ok=False)
-            # move yaml files in yaml_dir to undone_configs
-            if yaml_dir is not None:
+        if yaml_dir is not None:
+            # create config resources
+            # trial_path/done_configs: saving configs that have been evaluated
+            # trial_path/undone_configs: saving configs that have not been evaluated
+            self.done_path = os.path.join(self.trial_path, "done_configs")
+            self.undone_path = os.path.join(self.trial_path, "undone_configs")
+
+            if os.path.exists(self.done_path) and os.path.exists(self.undone_path):
+                print("Trial directory already exists:", self.trial_path)
+                print("Number of done configs:", len(glob.glob(os.path.join(self.done_path, "*.yaml"))))
+                print("Number of undone configs:", len(glob.glob(os.path.join(self.undone_path, "*.yaml"))))
+            else:
+                os.makedirs(self.done_path, exist_ok=False)
+                os.makedirs(self.undone_path, exist_ok=False)
+                # move yaml files in yaml_dir to undone_configs
                 yaml_files = glob.glob(os.path.join(yaml_dir, "*.yaml"))
                 print(f"{len(yaml_files)} YAML files found.")
                 print("Moving YAML files to the trial directory...")
                 for yaml_file in yaml_files:
                     shutil.copy(yaml_file, self.undone_path)
 
-        # # copy YAML file to the trial directory
-        # filename = os.path.basename(yaml_path)
-        # shutil.copy(
-        #     yaml_path, os.path.join(self.trial_path, filename)
-        # )
 
 
     def init_runner_from_yaml(
@@ -167,9 +149,15 @@ class TestEvaluator(Evaluator):
         with open(vectordb_config_path, "w") as f:
             yaml.safe_dump({"vectordb": vectordb}, f)
 
-        self.__ingest_bm25_full(yaml_dict.get("bm25_tokenizer_list", []))
+        self.__ingest_bm25_full(yaml_dict.get("bm25_tokenizer_list", ['porter_stemmer', 'space']))
+        # Ingest VectorDB corpus
+        if yaml_dict.get("vectordb", None):
+            loop = get_event_loop()
+            loop.run_until_complete(self.__ingest_vectordb(yaml_path, full_ingest=True))
+
         self.runner = Runner.from_yaml(yaml_path, project_dir=self.project_dir)
-        self.strategy = yaml_dict.get("strategies", {})
+        self.strategy = yaml_dict.get("strategies", {'metrics': ['meteor', 'rouge', 'bert_score']})
+
 
     def __ingest_bm25_full(self, bm25_tokenizer_list: List[str] = []):
         if len(bm25_tokenizer_list) == 0:
@@ -184,6 +172,21 @@ class TestEvaluator(Evaluator):
             bm25_ingest(bm25_dir, self.corpus_data, bm25_tokenizer=bm25_tokenizer)
         print("BM25 corpus embedding complete.")
 
+    async def __ingest_vectordb(self, yaml_path, full_ingest: bool):
+        vectordb_list = load_all_vectordb_from_yaml(yaml_path, self.project_dir)
+        if full_ingest is True:
+            # get the target ingest corpus from the whole corpus
+            for vectordb in vectordb_list:
+                target_corpus = await filter_exist_ids(vectordb, self.corpus_data)
+                await vectordb_ingest(vectordb, target_corpus)
+        else:
+            # get the target ingest corpus from the retrieval gt only
+            for vectordb in vectordb_list:
+                target_corpus = await filter_exist_ids_from_retrieval_gt(
+                    vectordb, self.qa_data, self.corpus_data
+                )
+                await vectordb_ingest(vectordb, target_corpus)
+
 
     def run(self, prompt: str) -> pd.DataFrame:
         """
@@ -192,17 +195,12 @@ class TestEvaluator(Evaluator):
         return self.runner.run(prompt)
 
 
-    def run_with_qa_eval(self, qa_data: pd.DataFrame = None, file_name="./score.csv") -> pd.DataFrame:
+    def run_with_qa_eval(self, qa_data: pd.DataFrame = None, yaml_name="./0.yaml", save_name=None) -> pd.DataFrame:
         if qa_data is None:
             qa_data = self.qa_data
-
-        # Init Metrics: make rows to metric_inputs
-        generation_gt = to_list(qa_data["generation_gt"].tolist())
-        metric_inputs = [MetricInput(generation_gt=gen_gt) for gen_gt in generation_gt]
         metric_names, metric_params = cast_metrics(self.strategy.get("metrics"))
         if metric_names is None or len(metric_names) <= 0:
             raise ValueError("You must at least one metrics for generator evaluation.")
-
         """
         @result_to_dataframe(["generated_texts", "generated_tokens", "generated_log_probs"])
 		pure (generator): A tuple of three elements.
@@ -213,17 +211,23 @@ class TestEvaluator(Evaluator):
         results, execution_times = measure_speed(
             func=self.runner.run_with_qa,
             qa_data=qa_data,
+            strategy=self.strategy,
         )
+        # save results to results.csv
+        if save_name is None:
+            save_name = yaml_name.split(".")[0] + ".csv"
+        write_summary(os.path.join(self.trial_path, "output", save_name), results)
 
+        # get average token usage & time
         average_time = execution_times / len(results)
-        # get average token usage
         token_usages = results["generated_tokens"].apply(len).mean()
-        results = evaluate_generator_node(results, metric_inputs, self.strategy.get("metrics"))
 
-        # save results to folder
+        # save scores to summary
         summary_df = pd.DataFrame(
             {
-                "filename": [file_name],
+                "filename": [yaml_name],
+                "qa_data_dir": [self.qa_data_path],
+                "corpus_data_dir": [self.corpus_data_path],
                 "execution_time": [average_time],
                 "average_output_token": [token_usages],
                 **{metric: [results[metric].mean()] for metric in metric_names},
@@ -231,7 +235,6 @@ class TestEvaluator(Evaluator):
         )
         logger.info(summary_df)
         logger.info("Evaluation complete.")
-
         return summary_df
 
 
@@ -246,10 +249,10 @@ class TestEvaluator(Evaluator):
             logger.info(f"Running {yaml_file}...")
             # rename the yaml file to locked file
             yaml_file_temp = yaml_file + ".lock"
-            os.rename(yaml_file, yaml_file_temp)
             try:
+                os.rename(yaml_file, yaml_file_temp)
                 self.init_runner_from_yaml(yaml_file_temp)
-                summary_df = self.run_with_qa_eval(file_name=yaml_name)
+                summary_df = self.run_with_qa_eval(yaml_name=yaml_name)
                 write_summary(summary_path, summary_df)
 
                 shutil.move(yaml_file_temp, os.path.join(self.done_path, yaml_name))
@@ -270,33 +273,16 @@ class TestEvaluator(Evaluator):
                 os.rename(yaml_file_temp, yaml_file)
                 break
 
+    def run_single_pass(self, yaml_file: str, save_name="final_results.csv"):
+        """
+        Run specific configuration (for example, the final configuration) and save the results.
+        """
+        summary_path = os.path.join(self.trial_path, "summary.csv")
+        self.init_runner_from_yaml(yaml_file)
 
-    # def select_best(self):
-    #     # Load results here
-    #
-    #     # filter by strategies
-    #     if self.strategy.get("speed_threshold") is not None:
-    #         results, filenames = filter_by_threshold(
-    #             results, average_time, self.strategy["speed_threshold"], filenames
-    #         )
-    #     if self.strategy.get("token_threshold") is not None:
-    #         results, filenames = filter_by_threshold(
-    #             results, token_usages, self.strategy["token_threshold"], filenames
-    #         )
-    #
-    #     selected_result, selected_filename = select_best(
-    #         results, metric_names, filenames, self.strategy.get("strategy", "mean")
-    #     )
-    #     best_result = pd.concat([previous_result, selected_result], axis=1)
+        yaml_name = os.path.basename(yaml_file)
+        summary_df = self.run_with_qa_eval(yaml_name="final_"+yaml_name, save_name=save_name)
+        write_summary(summary_path, summary_df)
 
-        # add 'is_best' column at summary file
-        # summary_df["is_best"] = summary_df["filename"] == selected_filename
-        #
-        # # save files
-        # summary_df.to_csv(os.path.join(node_dir, "summary.csv"), index=False)
-        # best_result.to_parquet(
-        #     os.path.join(
-        #         node_dir, f"best_{os.path.splitext(selected_filename)[0]}.parquet"
-        #     ),
-        #     index=False,
-        # )
+
+

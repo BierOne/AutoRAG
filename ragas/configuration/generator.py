@@ -18,7 +18,12 @@ GENERATOR_STATIC_PARAMS = {
     },
     "OpenAILLM": {
         "truncate": True,
-        "api_key": "your_api_key", # OpenAI API key. You can also set this to env variable OPENAI_API_KEY.
+        # "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        # "api_key": "sk-ab6eb49be7934c4f86678574618c646a", # OpenAI API key. You can also set this to env variable OPENAI_API_KEY.
+        "base_url": "https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+        "api_key": "sk-e46fb251c74d4c64a4c2835333e994a3",
+        # OpenAI API key. You can also set this to env variable OPENAI_API_KEY.
+        "request_timeout": 1200.0,
     },
     "Vllm": {
 

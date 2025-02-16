@@ -13,7 +13,8 @@ from autorag.strategy import measure_speed, filter_by_threshold, select_best
 from autorag.support import get_support_modules
 from autorag.utils import validate_qa_dataset
 from autorag.utils.util import make_combinations, explode, split_dataframe
-
+import logging
+logger = logging.getLogger(__name__)
 
 def run_prompt_maker_node(
 	modules: List,
@@ -96,6 +97,9 @@ def run_prompt_maker_node(
 	metric_names, metric_params = cast_metrics(strategies.get("metrics"))
 
 	# Run evaluation when there are more than one module.
+	logger.info(f"Number of prompt_maker modules: {len(modules)}")
+	print("prompt_maker modules:", modules)
+
 	if len(modules) > 1:
 		# pop general keys from strategies (e.g. metrics, speed_threshold)
 		general_key = ["metrics", "speed_threshold", "token_threshold", "tokenizer"]

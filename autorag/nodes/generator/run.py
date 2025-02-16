@@ -140,5 +140,4 @@ def evaluate_generator_node(
 			df["generated_tokens"].tolist(),
 			df["generated_log_probs"].tolist(),
 		)
-
 	return evaluate_generation_module(result_df)

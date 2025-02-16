@@ -5,6 +5,7 @@ import pandas as pd
 import tiktoken
 from openai import AsyncOpenAI
 from tiktoken import Encoding
+import asyncio
 
 from autorag.nodes.generator.base import BaseGenerator
 from autorag.utils.util import (
@@ -45,8 +46,23 @@ MAX_TOKEN_DICT = {  # model name : token limit
 	"gpt-3.5-turbo-16k": 16_385,
 	"gpt-3.5-turbo-0613": 4_096,
 	"gpt-3.5-turbo-16k-0613": 16_385,
+
+	"qwen2.5-7b-instruct-1m": 1_000_000,
+  "deepseek-chat": 1_000_000,
+  "Qwen/Qwen2.5-7B-Instruct": 1_000_000,
+  "chatglm-6b-v2": 8_000,
+  "deepseek-r1-distill-qwen-7b": 32_768,
 }
 
+
+class DummyTokenizer:
+	@staticmethod
+	def encode(x, *args, **kwargs):
+		return x
+
+	@staticmethod
+	def decode(x, *args, **kwargs):
+		return x
 
 class OpenAILLM(BaseGenerator):
 	def __init__(self, project_dir, llm: str, batch: int = 16, *args, **kwargs):
@@ -57,10 +73,13 @@ class OpenAILLM(BaseGenerator):
 		client_init_params = pop_params(AsyncOpenAI.__init__, kwargs)
 		self.client = AsyncOpenAI(**client_init_params)
 
+
 		if self.llm.startswith("o1"):
 			self.tokenizer = tiktoken.get_encoding("o200k_base")
-		else:
+		elif self.llm.startswith("gpt"):
 			self.tokenizer = tiktoken.encoding_for_model(self.llm)
+		else:
+			self.tokenizer = DummyTokenizer()
 
 		self.max_token_size = (
 			MAX_TOKEN_DICT.get(self.llm) - 7
@@ -129,10 +148,15 @@ class OpenAILLM(BaseGenerator):
 			tasks = [
 				self.get_result_o1(prompt, **openai_chat_params) for prompt in prompts
 			]
-		else:
+		elif "gpt" in self.llm:
 			tasks = [
 				self.get_result(prompt, **openai_chat_params) for prompt in prompts
 			]
+		else:
+			tasks = [
+				self.get_result_3rd(prompt, **openai_chat_params) for prompt in prompts
+			]  
+  
 		result = loop.run_until_complete(process_batch(tasks, self.batch))
 		answer_result = list(map(lambda x: x[0], result))
 		token_result = list(map(lambda x: x[1], result))
@@ -245,6 +269,47 @@ class OpenAILLM(BaseGenerator):
 		)
 		assert len(tokens) == len(logprobs), "tokens and logprobs size is different."
 		return answer, tokens, logprobs
+   
+
+	async def get_result_3rd(self, prompt: str, **kwargs):
+		max_retries = 3
+		timeout = 1500.0
+		retries = 0
+		while retries < max_retries:
+			try:
+				# 使用wait_for设置单次请求的超时时间
+				response = await asyncio.wait_for(
+					self.client.chat.completions.create(
+						model=self.llm,
+						messages=[
+							{"role": "user", "content": prompt},
+						],
+						logprobs=False,
+						n=1,
+						**kwargs
+					),
+					timeout=timeout
+				)
+				
+				# 解析响应
+				choice = response.choices[0]
+				answer = choice.message.content
+				tokens = self.tokenizer.encode(answer, allowed_special="all")
+				logprobs = [0.5] * len(tokens)
+				assert len(tokens) == len(logprobs), "tokens and logprobs size mismatch"
+				return answer, tokens, logprobs
+				
+			except asyncio.TimeoutError:
+				retries += 1
+				if retries >= max_retries:
+					raise TimeoutError(f"Request timed out after {max_retries} retries")
+				continue  # 继续重试
+				
+			except Exception as e:
+				# 其他异常直接抛出（可根据需要添加特定异常的重试逻辑）
+				raise
+
+		raise TimeoutError(f"Request failed after {max_retries} retries")
 
 	async def get_result_o1(self, prompt: str, **kwargs):
 		assert self.llm.startswith("o1"), "This function only supports o1 model."

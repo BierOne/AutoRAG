@@ -1,7 +1,7 @@
 from copy import deepcopy
 from typing import Union, List, Dict, Tuple, Any
 
-from autorag.embedding.base import EmbeddingModel
+from autorag import embedding_models
 
 
 def cast_metrics(
@@ -38,6 +38,6 @@ def cast_metrics(
 
 def cast_embedding_model(key, value):
 	if key == "embedding_model":
-		return key, EmbeddingModel.load(value)()
+		return key, embedding_models[value]()
 	else:
 		return key, value

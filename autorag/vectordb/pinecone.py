@@ -25,6 +25,7 @@ class Pinecone(BaseVectorStore):
 		deletion_protection: Optional[str] = "disabled",  # "enabled" or "disabled"
 		namespace: Optional[str] = "default",
 		ingest_batch: int = 200,
+		**kwargs
 	):
 		super().__init__(embedding_model, similarity_metric, embedding_batch)
 

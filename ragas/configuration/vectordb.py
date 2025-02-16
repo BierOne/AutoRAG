@@ -21,7 +21,7 @@ VECTORDB_STATIC_PARAMS = {
         "api_key": None,
         "tenant": DEFAULT_TENANT,
         "database": DEFAULT_DATABASE,
-        "path": "/home/lyb/RAG/experiments/default_vectordb",
+        "path": "/home/lyb/RAG/AutoRAG/experiments/db_resources/eli5",
     },
     "couchbase": {
         "index_name": "my_vector_index",  # replace your index name
@@ -168,7 +168,7 @@ class VectorDBConfiguration(BaseConfiguration):
             static_params = self.load_static_params(module_type)
             hp_config_dict.update(static_params)
             node_lines.append({
-                "name": "default_vectordb",
+                "name": "chroma_large",
                 **hp_config_dict
             })
         return node_lines

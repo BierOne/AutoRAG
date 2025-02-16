@@ -98,7 +98,7 @@ class RetrievalConfiguration(BaseConfiguration):
                         },
                         {
                             "top_k": top_k,
-                            "vectordb": "default_vectordb"
+                            "vectordb": "chroma_large"
                         }
                     ],
                 })
@@ -116,7 +116,7 @@ class RetrievalConfiguration(BaseConfiguration):
             # if module_type.startswith("hybrid"):
                 # node_line["nodes"][0]["modules"].extend([
                 #     {'module_type': 'bm25', "top_k": top_k},
-                #     {'module_type': 'vectordb', "vectordb": "default_vectordb", "top_k": top_k}
+                #     {'module_type': 'vectordb', "vectordb": "chroma_large", "top_k": top_k}
                 # ])
             node_lines.append(node_line)
 

@@ -3,14 +3,14 @@ vectordb:
 #  method: [chroma, couchbase, milvus, pinecone, qdrant, weaviate]
   collection_name: [huggingface_all_mpnet_base_v2]
   embedding_model: [huggingface_all_mpnet_base_v2]
-  embedding_batch: [100, 200]
+  embedding_batch: 200
   similarity_metric: [cosine, l2, ip]
   couchbase:
-    ingest_batch: [100, 200]
+    ingest_batch: 200
   pinecone:
-    ingest_batch: [100, 200]
+    ingest_batch: 200
   milvus:
-    ingest_batch: [100, 200]
+    ingest_batch: 200
     index_type: [IVF_FLAT, ScaNN, IVF_SQ8, SCANN, GPU_CAGRA, GPU_IVF_FLAT] # https://milvus.io/docs/index.md?tab=floating
 
 #query_expansion:
@@ -121,10 +121,10 @@ prompt_maker:
 
 
 generator: # api_base, api_key
-  method: [LlamaIndexLLM,]
-  temperature: [0.1, 0.5] # The temperature of the sampling. Higher temperature means more randomness.
-  batch: [1]
-  max_token: 512
+  method: [OpenAILLM,] # LlamaIndexLLM OpenAILLM, Vllm, VllmAPI
+  temperature: [0.1] # The temperature of the sampling. Higher temperature means more randomness.
+  batch: [2]
+  max_token: 512 # The maximum number of tokens to generate (control the cost).
   LlamaIndexLLM:
     # TODO: add available list
     llm: [ollama]
@@ -134,7 +134,7 @@ generator: # api_base, api_key
 #    model: [gpt-3.5-turbo-16k, gpt-3.5-turbo-1106, llama3, mistralai/Mistral-7B-Instruct-v0.2]
     torch_dtype: "float16"
   OpenAILLM: # static params: truncate, api_key
-    llm: [gpt-3.5-turbo, gpt-4-turbo-2024-04-09] # A model name for openai.
+    llm: [qwen2.5-7b-instruct-1m] # A model name for openai. gpt-3.5-turbo
   Vllm:
     llm: [mistralai/Mistral-7B-Instruct-v0.2, facebook/opt-125m]
     top_p: (0, 1.0) # Float that controls the cumulative probability of the top tokens to consider. Must be in (0, 1]. Set to 1 to consider all tokens.
